@@ -86,17 +86,9 @@ def main():
     print(3)
     copyDirectory(f'{absoluteDirectory}/Template/keymaps/vial',f"{absoluteDirectory}/Generated/{keyboardName}/keymaps/vial")
     print(4)
-    # rename files to match keyboard name
-    os.rename(f'{absoluteDirectory}/Generated/{keyboardName}/template.h', f'{absoluteDirectory}/Generated/{keyboardName}/{keyboardName}.h')
-    os.rename(f'{absoluteDirectory}/Generated/{keyboardName}/template.c', f'{absoluteDirectory}/Generated/{keyboardName}/{keyboardName}.c')
     
-    
-    # update keyboardName.c to include "keyboardName.h"
-    writeFileNewLine(f'{absoluteDirectory}/Generated/{keyboardName}/{keyboardName}.c', f'#include "{keyboardName}.h"')
-
-
-    #update config.h file
-    replaceLine(f'{absoluteDirectory}/Generated/{keyboardName}/config.h',20,"#define VIAL_KEYBOARD_UID {{{}}}\n".format(", ".join(["0x{:02X}".format(x) for x in secrets.token_bytes(8)])))
+    #update keymaps/vial/config.h file
+    replaceLine(f'{absoluteDirectory}/Generated/{keyboardName}/keymaps/vial/config.h',18,"#define VIAL_KEYBOARD_UID {{{}}}\n".format(", ".join(["0x{:02X}".format(x) for x in secrets.token_bytes(8)])))
 
 
     #rules.mk
@@ -118,10 +110,13 @@ def main():
     info["url"] = "http://www.pikatea.com"
     info["maintainer"] = "Jack Kester"
     info["manufacturer"] = "Jack Kester"
-    info["width"] = len(cols)
-    info["height"] = len(rows)
+    info["dynamic_keymap"] = {}
+    info["dynamic_keymap"]["layout_count"] = 4
+    # info["matrix_size"] = {}
+    # info["matrix_size"]["cols"] = len(cols)
+    # info["matrix_size"]['rows'] = len(rows)
     info["diode_direction"] = "COL2ROW"
-    info["features"] = {"bootmagic": True,"command": False,"console": False,"mousekey": False,"extrakey": True,"nkro": False,"lto": True}
+    info["features"] = {"bootmagic": True,"command": False,"console": False,"mousekey": False,"extrakey": True,"nkro": False}
     if int(encoderNumber) != 0:
         info["features"]["encoder"] = True
     info["matrix_pins"] = {"cols":cols,"rows": rows}
@@ -132,42 +127,12 @@ def main():
     info["layouts"] = {"LAYOUT": {"layout": []}}
     for r in range(len(rows)):
         for c in range(len(cols)):
-            info["layouts"]["LAYOUT"]["layout"].append({"label":f"{r},{c}","x":r,"y":c})
+            info["layouts"]["LAYOUT"]["layout"].append({"label":f"k{r}{c}","x":r,"y":c,"matrix":[r, c]})
     
     
 
     with open(f"{absoluteDirectory}/Generated/{keyboardName}/info.json", "w") as fp:
         json.dump(info, fp)
-
-
-    # Create Matrix in keyboardName.h
-    keyboardHMatrixString = ""
-    keyboardHMatrixString += '#define LAYOUT( \\\n'
-    for row in range(len(rows)):
-        for col in range(len(cols)):
-            if col == len(cols)-1 and row == len(rows)-1:
-                keyboardHMatrixString += f"K{row}{col} "
-            else:
-                keyboardHMatrixString += f"K{row}{col}, "
-        keyboardHMatrixString += " \\\n"
-
-    keyboardHMatrixString += ") { \\\n"
-
-    for row in range(len(rows)):
-        keyboardHMatrixString += "{ "
-        for col in range(len(cols)):
-            if col == len(cols)-1:
-                keyboardHMatrixString += f"K{row}{col} "
-            else:
-                keyboardHMatrixString += f"K{row}{col}, "
-        if row == len(rows)-1:
-            keyboardHMatrixString += "}  \\\n"
-        else:
-            keyboardHMatrixString += "},  \\\n"
-
-    keyboardHMatrixString += "}\n"
-
-    replaceLine(f'{absoluteDirectory}/Generated/{keyboardName}/{keyboardName}.h',29,keyboardHMatrixString)
 
 
     #keymap.c
